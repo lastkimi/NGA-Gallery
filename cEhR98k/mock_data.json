@@ -1,0 +1,72 @@
+[
+    {
+        "id": 1,
+        "title": "Ginevra de' Benci",
+        "artist": "Leonardo da Vinci",
+        "date": "c. 1474/1478",
+        "medium": "Oil on panel",
+        "classification": "Painting",
+        "image": "https://media.nga.gov/iiif/30a588b4-0556-4277-96a2-a5e22989c47e/full/800,/0/default.jpg",
+        "dimensions": "38.1 x 37 cm (15 x 14 9/16 in.)",
+        "culture": "Italian",
+        "credit": "Ailsa Mellon Bruce Fund",
+        "provenance": "Commissioned by the Benci family, Florence. Acquired from the Princely House of Liechtenstein in 1967.",
+        "exhibitions": "Leonardo da Vinci: Master Draftsman, The Metropolitan Museum of Art, 2003."
+    },
+    {
+        "id": 2,
+        "title": "The Railway",
+        "artist": "Édouard Manet",
+        "date": "1873",
+        "medium": "Oil on canvas",
+        "classification": "Painting",
+        "image": "https://media.nga.gov/iiif/1e263c9b-658f-4316-953e-0045f4195156/full/800,/0/default.jpg",
+        "dimensions": "93.3 x 111.5 cm (36 3/4 x 43 7/8 in.)",
+        "culture": "French",
+        "credit": "Gift of Horace Havemeyer in memory of his mother, Louisine W. Havemeyer",
+        "provenance": "Victor Chocquet collection, Paris; Havemeyer collection, New York.",
+        "exhibitions": "Paris Salon of 1874; Impressionism, Fashion, and Modernity, 2012."
+    },
+    {
+        "id": 3,
+        "title": "Little Dancer Aged Fourteen",
+        "artist": "Edgar Degas",
+        "date": "1878-1881",
+        "medium": "Bronze, cotton, and silk",
+        "classification": "Sculpture",
+        "image": "https://media.nga.gov/iiif/331a316a-d460-4929-9e0c-8067c293673c/full/800,/0/default.jpg",
+        "dimensions": "98.9 x 34.7 x 35.2 cm",
+        "culture": "French",
+        "credit": "Collection of Mr. and Mrs. Paul Mellon",
+        "provenance": "Degas estate, Paris; Paul Mellon Collection, Virginia.",
+        "exhibitions": "Degas and the Little Dancer, Joslyn Art Museum, 1998."
+    },
+    {
+        "id": 4,
+        "title": "Self-Portrait",
+        "artist": "Vincent van Gogh",
+        "date": "1889",
+        "medium": "Oil on canvas",
+        "classification": "Painting",
+        "image": "https://media.nga.gov/iiif/53c613c9-0442-43e5-8a24-2c67b21287c9/full/800,/0/default.jpg",
+        "dimensions": "65 x 54.1 cm",
+        "culture": "Dutch",
+        "credit": "Collection of Mr. and Mrs. John Hay Whitney",
+        "provenance": "Theo van Gogh, Paris; Whitney Family, New York.",
+        "exhibitions": "Van Gogh's Van Goghs, National Gallery of Art, 1998."
+    },
+    {
+        "id": 5,
+        "title": "The Shaw Memorial",
+        "artist": "Augustus Saint-Gaudens",
+        "date": "1900",
+        "medium": "Patinated plaster",
+        "classification": "Sculpture",
+        "image": "https://media.nga.gov/iiif/a7d74f2f-87d2-45e8-8a5e-990f11e967a5/full/800,/0/default.jpg",
+        "dimensions": "3.35 x 4.27 m",
+        "culture": "American",
+        "credit": "Gift of the Saint-Gaudens Memorial",
+        "provenance": "Artist's studio; Saint-Gaudens National Historic Site.",
+        "exhibitions": "Universal Exposition, Paris, 1900."
+    }
+]

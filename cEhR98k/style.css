@@ -1,0 +1,118 @@
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@300;400;600&family=Inter:wght@300;400;600&display=swap');
+
+:root {
+    --nga-purple: #73216D;
+}
+
+body {
+    font-family: 'Inter', 'Avenir Next', 'Helvetica', sans-serif;
+}
+
+h1, h2, h3, h4, .font-serif {
+    font-family: 'Crimson Pro', 'Georgia', serif;
+}
+
+.text-nga-purple {
+    color: var(--nga-purple);
+}
+
+.bg-nga-purple {
+    background-color: var(--nga-purple);
+}
+
+.border-nga-purple {
+    border-color: var(--nga-purple);
+}
+
+/* Custom Gallery Card */
+.artwork-card {
+    cursor: pointer;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.artwork-card:hover .image-container img {
+    transform: scale(1.05);
+}
+
+.image-container {
+    background-color: #f7f7f7;
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 1/1;
+}
+
+.image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nga-logo {
+    letter-spacing: -0.05em;
+    font-weight: 600;
+}
+
+/* OpenSeadragon Styling */
+#osd-viewer {
+    background: #fdfdfd;
+    cursor: crosshair;
+}
+
+.osd-custom-controls {
+    position: absolute;
+    bottom: 24px;
+    left: 24px;
+    display: flex;
+    gap: 8px;
+    z-index: 20;
+}
+
+.osd-btn {
+    background: white;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #eee;
+    transition: all 0.2s;
+}
+
+.osd-btn:hover {
+    background: #f8f8f8;
+    border-color: #000;
+}
+
+/* Sidebar Custom Scroll */
+.sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #ddd transparent;
+}
+.sidebar-scroll::-webkit-scrollbar {
+    width: 4px;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb {
+    background-color: #ddd;
+}
+
+/* Animations */
+.search-active, .modal-open {
+    overflow: hidden;
+}
+
+.fade-in {
+    animation: fadeIn 0.8s ease forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Recommendations Grid */
+.recommendations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 16px;
+}

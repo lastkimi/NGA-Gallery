@@ -1,0 +1,28 @@
+{
+  "totalObjects": 100,
+  "totalConstituents": 200,
+  "totalImages": 97,
+  "objectsWithImages": 94,
+  "classifications": [
+    "Painting",
+    "Print",
+    "Sculpture",
+    "Drawing",
+    "Index of American Design"
+  ],
+  "departments": [
+    "CIS-R",
+    "CNE-R",
+    "CNE-B",
+    "CG-E",
+    "CIS-B",
+    "CAB",
+    "CSD",
+    "CG-W",
+    "CF"
+  ],
+  "dateRange": {
+    "earliest": 1310,
+    "latest": 1992
+  }
+}

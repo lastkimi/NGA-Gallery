@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>National Gallery of Art | Digital Collection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.0/openseadragon.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-white text-black antialiased overflow-x-hidden">
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-8">
+            <h1 class="nga-logo text-2xl font-serif tracking-tighter cursor-pointer" onclick="window.location.reload()">National Gallery of Art</h1>
+            <div class="hidden md:flex gap-6 text-sm uppercase tracking-widest font-medium">
+                <a href="#" class="hover:text-nga-purple transition-colors">Collection</a>
+                <a href="#" class="hover:text-nga-purple transition-colors">Exhibitions</a>
+                <a href="#" class="hover:text-nga-purple transition-colors">Education</a>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <button id="search-trigger" class="p-2 hover:bg-gray-100 rounded-full transition-all">
+                <i data-lucide="search" class="w-6 h-6"></i>
+            </button>
+            <button class="md:hidden p-2">
+                <i data-lucide="menu" class="w-6 h-6"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-24 min-h-screen">
+        <!-- Hero / Stats Section -->
+        <header class="px-6 py-12 md:px-20 border-b border-gray-100">
+            <div class="max-w-4xl">
+                <h2 class="text-5xl md:text-7xl font-serif mb-6 leading-tight">Art for the Nation</h2>
+                <p class="text-xl text-gray-600 font-sans leading-relaxed">
+                    Explore 62,307 open-access artworks from our permanent collection. From the Renaissance to the modern era, available for download and study.
+                </p>
+            </div>
+        </header>
+
+        <!-- Gallery Grid -->
+        <section id="gallery-container" class="p-6 md:p-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
+            <!-- Cards injected by JS -->
+        </section>
+
+        <!-- Loading Spinner -->
+        <div id="loading-sentinel" class="w-full h-24 flex items-center justify-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-nga-purple"></div>
+        </div>
+    </main>
+
+    <!-- Search Overlay -->
+    <div id="search-overlay" class="fixed inset-0 z-[100] bg-white hidden opacity-0">
+        <div class="p-6 md:p-12 flex flex-col h-full">
+            <div class="flex justify-between items-center mb-12">
+                <h3 class="text-3xl font-serif">Search the Collection</h3>
+                <button id="search-close" class="p-2 hover:bg-gray-100 rounded-full">
+                    <i data-lucide="x" class="w-8 h-8"></i>
+                </button>
+            </div>
+            
+            <input type="text" id="search-input" placeholder="Artist, title, or keyword..." 
+                class="text-4xl md:text-6xl font-serif border-b-2 border-black focus:outline-none py-4 w-full placeholder:text-gray-200">
+            
+            <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div>
+                    <h4 class="uppercase tracking-widest text-xs font-bold mb-4 text-gray-400">Classifications</h4>
+                    <div class="flex flex-wrap gap-2" id="filter-class">
+                        <button class="px-4 py-2 border border-gray-200 hover:border-black transition-all rounded-full">Painting</button>
+                        <button class="px-4 py-2 border border-gray-200 hover:border-black transition-all rounded-full">Sculpture</button>
+                        <button class="px-4 py-2 border border-gray-200 hover:border-black transition-all rounded-full">Photography</button>
+                        <button class="px-4 py-2 border border-gray-200 hover:border-black transition-all rounded-full">Print</button>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="uppercase tracking-widest text-xs font-bold mb-4 text-gray-400">Time Periods</h4>
+                    <div class="flex flex-wrap gap-2" id="filter-period">
+                        <button class="px-4 py-2 border border-gray-200 hover:border-black transition-all rounded-full">Renaissance</button>
+                        <button class="px-4 py-2 border border-gray-200 hover:border-black transition-all rounded-full">Baroque</button>
+                        <button class="px-4 py-2 border border-gray-200 hover:border-black transition-all rounded-full">Modern</button>
+                        <button class="px-4 py-2 border border-gray-200 hover:border-black transition-all rounded-full">Contemporary</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Artwork Detail Modal -->
+    <div id="detail-modal" class="fixed inset-0 z-[110] hidden">
+        <div class="absolute inset-0 bg-white" id="modal-backdrop"></div>
+        <div class="absolute inset-0 h-full w-full bg-white flex flex-col md:flex-row transform translate-x-full" id="modal-content">
+            <!-- Content dynamically updated by UIController -->
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+    <script>
+        window.closeModal = () => {
+             const event = new CustomEvent('close-artwork-modal');
+             document.dispatchEvent(event);
+        };
+    </script>
+</body>
+</html>
