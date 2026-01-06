@@ -1,44 +1,153 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Box,
-  Container,
-  Typography,
-  Grid,
-  CircularProgress,
-  Pagination,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  TextField,
-  Button,
-  Chip,
-  Stack,
-  IconButton,
-  ToggleButton,
-  ToggleButtonGroup,
-  Paper,
-  Collapse,
-  useMediaQuery,
-  useTheme,
-  Slider,
-} from '@mui/material';
-import {
-  FilterList as FilterIcon,
-  ViewModule as GridViewIcon,
-  ViewList as ListViewIcon,
-  Refresh as RefreshIcon,
-  Close as CloseIcon,
-} from '@mui/icons-material';
+import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../store/appStore';
 import { objectsApi } from '../services/api';
 import ObjectCard from '../components/collection/ObjectCard';
-import Header from '../components/common/Header';
+import TimelineFilter from '../components/collection/TimelineFilter';
+import Pagination from '../components/common/Pagination';
+import ScrollDownButton from '../components/common/ScrollDownButton';
+import { Filter, Grid as GridIcon, List as ListIcon, RotateCw, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+
+declare global {
+    interface Window {
+        searchTimeout: any;
+    }
+}
+
+// 艺术家列表 (仅保留数据库中存在数据的艺术家)
+const TOP_ARTISTS_EN = [
+    'Van Gogh', 'Monet', 'Picasso', 'Da Vinci', 'Rembrandt', 'Vermeer', 
+    'Renoir', 'Degas', 'Gauguin', 'Manet', 'Matisse', 'Warhol', 'Klimt',
+    'Munch', 'O\'Keeffe', 'Pollock', 'Rothko', 'Hopper', 'Whistler',
+    'Sargent', 'Homer', 'Eakins', 'Cassatt', 'Rodin', 'Michelangelo', 'Raphael',
+    'Dürer', 'Goya', 'Velázquez', 'El Greco', 'Rubens', 'Bosch', 'Bruegel',
+    'Caravaggio', 'Bernini', 'Titian', 'Botticelli', 'Modigliani',
+    'Chagall', 'Kandinsky', 'Magritte', 'Seurat',
+    'Signac', 'Pissarro', 'Sisley', 'Morisot', 'Courbet', 'Millet', 'Rousseau',
+    'Delacroix', 'Ingres', 'David', 'Turner', 'Constable', 'Blake', 'Friedrich',
+    'Kuniyoshi', 'Hockney', 
+    'Lichtenstein', 'Hirst', 'Sherman', 'Holzer', 'Kruger',
+    'Bourgeois', 'Nevelson', 'Frankenthaler', 'Mitchell', 'Martin', 'Ryman',
+    'Stella', 'Kelly', 'LeWitt', 'Judd', 'Andre', 'Flavin', 'Turrell'
+];
+
+const ARTIST_NAME_MAP: Record<string, string> = {
+    'Van Gogh': '梵高',
+    'Monet': '莫奈',
+    'Picasso': '毕加索',
+    'Da Vinci': '达芬奇',
+    'Rembrandt': '伦勃朗',
+    'Vermeer': '维米尔',
+    'Renoir': '雷诺阿',
+    'Degas': '德加',
+    'Gauguin': '高更',
+    'Manet': '马奈',
+    'Matisse': '马蒂斯',
+    'Warhol': '沃霍尔',
+    'Klimt': '克里姆特',
+    'Munch': '蒙克',
+    'O\'Keeffe': '欧姬芙',
+    'Pollock': '波洛克',
+    'Rothko': '罗斯科',
+    'Hopper': '霍普',
+    'Whistler': '惠斯勒',
+    'Sargent': '萨金特',
+    'Homer': '霍默',
+    'Eakins': '伊肯斯',
+    'Cassatt': '卡萨特',
+    'Rodin': '罗丹',
+    'Michelangelo': '米开朗基罗',
+    'Raphael': '拉斐尔',
+    'Dürer': '丢勒',
+    'Goya': '戈雅',
+    'Velázquez': '委拉斯开兹',
+    'El Greco': '埃尔·格列柯',
+    'Rubens': '鲁本斯',
+    'Bosch': '博斯',
+    'Bruegel': '勃鲁盖尔',
+    'Caravaggio': '卡拉瓦乔',
+    'Bernini': '贝尼尼',
+    'Titian': '提香',
+    'Botticelli': '波提切利',
+    'Modigliani': '莫迪利亚尼',
+    'Chagall': '夏加尔',
+    'Kandinsky': '康定斯基',
+    'Magritte': '马格利特',
+    'Seurat': '修拉',
+    'Signac': '西涅克',
+    'Pissarro': '毕沙罗',
+    'Sisley': '西斯莱',
+    'Morisot': '莫里索',
+    'Courbet': '库尔贝',
+    'Millet': '米勒',
+    'Rousseau': '卢梭',
+    'Delacroix': '德拉克洛瓦',
+    'Ingres': '安格尔',
+    'David': '大卫',
+    'Turner': '透纳',
+    'Constable': '康斯太勃尔',
+    'Blake': '布莱克',
+    'Friedrich': '弗里德里希',
+    'Kuniyoshi': '歌川国芳',
+    'Hockney': '霍克尼',
+    'Lichtenstein': '利希滕斯坦',
+    'Hirst': '赫斯特',
+    'Sherman': '舍曼',
+    'Holzer': '霍尔泽',
+    'Kruger': '克鲁格',
+    'Bourgeois': '布尔乔亚',
+    'Nevelson': '尼维尔森',
+    'Frankenthaler': '弗兰肯塔勒',
+    'Mitchell': '米切尔',
+    'Martin': '马丁',
+    'Ryman': '赖曼',
+    'Stella': '斯特拉',
+    'Kelly': '凯利',
+    'LeWitt': '勒维特',
+    'Judd': '贾德',
+    'Andre': '安德烈',
+    'Flavin': '弗拉文',
+    'Turrell': '特瑞尔'
+};
+
+// 分类翻译映射
+const CLASSIFICATION_MAP: Record<string, string> = {
+    'Painting': '绘画',
+    'Sculpture': '雕塑',
+    'Drawing': '素描',
+    'Print': '版画',
+    'Photograph': '摄影',
+    'Decorative Art': '装饰艺术',
+    'Index of American Design': '美国设计索引',
+    'Textile': '纺织品',
+    'Costume': '服饰',
+    'Furniture': '家具',
+    'Ceramic': '陶瓷',
+    'Metalwork': '金属工艺',
+    'Glass': '玻璃工艺',
+    'Book': '书籍',
+    'Architecture': '建筑',
+    'Time-Based Media': '时基媒体', // 修正 key 或保留兼容
+    'Time-Based Media Art': '时基媒体艺术', // 新增
+    'Technical Material': '技术材料',
+    'Portfolio': '作品集',
+    'Volume': '卷册',
+    'Media': '媒体'
+};
 
 const CollectionPage: React.FC = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
+  const { t } = useTranslation();
   const {
     objects,
     pagination,
@@ -53,14 +162,11 @@ const CollectionPage: React.FC = () => {
     filters,
   } = useAppStore();
   
+  const [searchParams] = useSearchParams();
   const [classifications, setClassifications] = useState<string[]>([]);
   const [departments, setDepartments] = useState<string[]>([]);
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
-  // 初始化yearRange，如果有filters中的年份信息则使用，否则使用默认值
-  const [yearRange, setYearRange] = useState<number[]>([
-    filters.beginYear || 1000,
-    filters.endYear || 2024,
-  ]);
+  
   const [localFilters, setLocalFilters] = useState({
     search: '',
     classification: '',
@@ -70,39 +176,81 @@ const CollectionPage: React.FC = () => {
     endYear: '',
   });
   
-  // 同步filters到yearRange（当filters从外部改变时）
+  // 初始化：从 URL 读取参数并设置 filters
   useEffect(() => {
-    if (filters.beginYear !== null || filters.endYear !== null) {
-      setYearRange([
-        filters.beginYear || 1000,
-        filters.endYear || 2024,
-      ]);
+    const classificationParam = searchParams.get('classification');
+    const departmentParam = searchParams.get('department');
+    const searchParam = searchParams.get('q');
+    
+    if (classificationParam || departmentParam || searchParam) {
+      setFilters({
+        ...filters,
+        classification: classificationParam || '',
+        department: departmentParam || '',
+        search: searchParam || '',
+      });
     }
-  }, [filters.beginYear, filters.endYear]);
-  
-  // Fetch objects data
+  }, [searchParams]);
+
+  // 同步filters到localFilters
   useEffect(() => {
+    setLocalFilters(prev => ({
+      ...prev,
+      search: filters.search || '',
+      classification: filters.classification || 'all_items',
+      department: filters.department || 'all_items',
+      artist: filters.artist || '',
+      beginYear: filters.beginYear ? filters.beginYear.toString() : '',
+      endYear: filters.endYear ? filters.endYear.toString() : '',
+    }));
+  }, [filters]);
+  
+  useEffect(() => {
+    let ignore = false;
     const fetchObjects = async () => {
       setIsLoading(true);
       try {
         const response = await objectsApi.getList(filters, pagination.page, pagination.limit);
+        
+        if (ignore) {
+          return;
+        }
+        
+        if (response.data && response.data.length > 0) {
         setObjects(response.data);
+        } else {
+          setObjects([]);
+        }
+        
         setPagination({
           page: response.pagination.page,
           limit: response.pagination.limit,
           total: response.pagination.total,
           totalPages: response.pagination.totalPages,
         });
-      } catch (err) {
-        console.error('Error fetching objects:', err);
+      } catch (err: any) {
+        if (ignore) return;
+        
+        console.error('[CollectionPage] Error fetching objects:', err);
+        setObjects([]);
+        setPagination({
+          page: 1,
+          limit: pagination.limit,
+          total: 0,
+          totalPages: 0,
+        });
       } finally {
+        if (!ignore) {
         setIsLoading(false);
+        }
       }
     };
     fetchObjects();
-  }, [filters, pagination.page, pagination.limit, setObjects, setPagination, setIsLoading]);
+    return () => {
+      ignore = true;
+    };
+  }, [filters.search, filters.classification, filters.department, filters.artist, filters.beginYear, filters.endYear, filters.medium, pagination.page, pagination.limit]);
   
-  // Fetch filter options
   useEffect(() => {
     const fetchFilterOptions = async () => {
       try {
@@ -120,18 +268,13 @@ const CollectionPage: React.FC = () => {
   }, []);
   
   const handleFilterApply = () => {
-    // 如果年份范围是默认的[1000, 2024]，则不应用年份筛选（设置为null）
-    // 否则应用选择的年份范围
-    const defaultYearRange = [1000, 2024];
-    const isDefaultRange = yearRange[0] === defaultYearRange[0] && yearRange[1] === defaultYearRange[1];
-    
     setFilters({
       search: localFilters.search,
-      classification: localFilters.classification,
-      department: localFilters.department,
+      classification: localFilters.classification === 'all_items' ? '' : localFilters.classification,
+      department: localFilters.department === 'all_items' ? '' : localFilters.department,
       artist: localFilters.artist,
-      beginYear: isDefaultRange ? null : yearRange[0],
-      endYear: isDefaultRange ? null : yearRange[1],
+      beginYear: localFilters.beginYear ? parseInt(localFilters.beginYear) : null,
+      endYear: localFilters.endYear ? parseInt(localFilters.endYear) : null,
     });
     setPagination({ page: 1 });
     setFilterPanelOpen(false);
@@ -146,315 +289,290 @@ const CollectionPage: React.FC = () => {
       beginYear: '',
       endYear: '',
     });
-    setYearRange([1000, 2024]);
     resetFilters();
     setPagination({ page: 1 });
   };
   
-  const handleYearRangeChange = (_: Event, newValue: number | number[]) => {
-    const values = newValue as number[];
-    setYearRange(values);
-    setLocalFilters({
-      ...localFilters,
-      beginYear: values[0].toString(),
-      endYear: values[1].toString(),
-    });
-  };
-  
-  const handlePageChange = (_: React.ChangeEvent<unknown>, page: number) => {
+  const handlePageChange = (page: number) => {
     setPagination({ page });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   
   const activeFiltersCount = [
-    localFilters.classification,
-    localFilters.department,
-    localFilters.artist,
-    yearRange[0] !== 1000 || yearRange[1] !== 2024 ? 'year' : null,
+    filters.classification,
+    filters.department,
+    filters.artist,
+    filters.beginYear,
+    filters.endYear,
   ].filter(Boolean).length;
   
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#fafafa' }}>
-      <Header />
-      
-      <Container maxWidth="xl" sx={{ py: { xs: 2, md: 4 }, px: { xs: 1, sm: 2, md: 3 } }}>
-        {/* Page header */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: { xs: 'flex-start', md: 'center' },
-            mb: { xs: 2, md: 4 },
-            flexWrap: 'wrap',
-            gap: 2,
-            flexDirection: { xs: 'column', sm: 'row' },
-          }}
-        >
-          <Box sx={{ width: { xs: '100%', sm: 'auto' } }}>
-            <Typography variant={isMobile ? 'h5' : 'h4'} sx={{ fontWeight: 600 }}>
-              藏品浏览
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              共 {pagination.total.toLocaleString()} 件藏品
-            </Typography>
-          </Box>
+    <div className="bg-background min-h-screen pb-12 text-foreground">
+      <div className="container mx-auto px-4 py-8 md:py-12">
+        {/* Page Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 pb-8 border-b border-border">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-serif font-bold mb-3 tracking-tight text-foreground">{t('collection.title')}</h1>
+            <p className="text-muted-foreground">
+              {t('collection.artworksCount', { count: pagination.total })}
+            </p>
+          </div>
           
-          <Box sx={{ 
-            display: 'flex', 
-            gap: { xs: 1, md: 2 }, 
-            alignItems: 'center',
-            width: { xs: '100%', sm: 'auto' },
-            justifyContent: { xs: 'space-between', sm: 'flex-end' },
-          }}>
-            {/* Filter button */}
-            <Button
-              variant="outlined"
-              startIcon={<FilterIcon />}
-              onClick={() => setFilterPanelOpen(!filterPanelOpen)}
-              sx={{ position: 'relative' }}
-            >
-              筛选
-              {activeFiltersCount > 0 && (
-                <Chip
-                  label={activeFiltersCount}
-                  size="small"
-                  color="primary"
-                  sx={{
-                    position: 'absolute',
-                    top: -8,
-                    right: -8,
-                    minWidth: 20,
-                    height: 20,
-                  }}
-                />
-              )}
-            </Button>
-            
-            {/* View mode toggle */}
-            <ToggleButtonGroup
-              value={viewMode}
-              exclusive
-              onChange={(_, value) => value && setViewMode(value)}
-              size="small"
-            >
-              <ToggleButton value="grid">
-                <GridViewIcon />
-              </ToggleButton>
-              <ToggleButton value="list">
-                <ListViewIcon />
-              </ToggleButton>
-            </ToggleButtonGroup>
-            
-            {/* Refresh button */}
-            <IconButton onClick={() => window.location.reload()}>
-              <RefreshIcon />
-            </IconButton>
-          </Box>
-        </Box>
-        
-        {/* Filter panel */}
-        <Collapse in={filterPanelOpen}>
-          <Paper sx={{ p: 3, mb: 4 }}>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: 3,
-              }}
-            >
-              <Typography variant="h6">高级筛选</Typography>
-              <IconButton onClick={() => setFilterPanelOpen(false)}>
-                <CloseIcon />
-              </IconButton>
-            </Box>
-            
-            <Grid container spacing={3}>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  fullWidth
-                  label="搜索"
-                  value={localFilters.search}
-                  onChange={(e) =>
-                    setLocalFilters({ ...localFilters, search: e.target.value })
-                  }
-                  placeholder="搜索标题、描述..."
-                />
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  fullWidth
-                  label="艺术家"
-                  value={localFilters.artist}
-                  onChange={(e) =>
-                    setLocalFilters({ ...localFilters, artist: e.target.value })
-                  }
-                />
-              </Grid>
-              <Grid size={{ xs: 12, md: 4 }}>
-                <FormControl fullWidth>
-                  <InputLabel>分类</InputLabel>
-                  <Select
-                    value={localFilters.classification}
-                    label="分类"
-                    onChange={(e) =>
-                      setLocalFilters({ ...localFilters, classification: e.target.value })
-                    }
-                  >
-                    <MenuItem value="">全部</MenuItem>
-                    {classifications.map((c) => (
-                      <MenuItem key={c} value={c}>
-                        {c}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={{ xs: 12, md: 4 }}>
-                <FormControl fullWidth>
-                  <InputLabel>部门</InputLabel>
-                  <Select
-                    value={localFilters.department}
-                    label="部门"
-                    onChange={(e) =>
-                      setLocalFilters({ ...localFilters, department: e.target.value })
-                    }
-                  >
-                    <MenuItem value="">全部</MenuItem>
-                    {departments.map((d) => (
-                      <MenuItem key={d} value={d}>
-                        {d}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <Box>
-                  <Typography gutterBottom sx={{ mb: 2 }}>
-                    年份范围: {yearRange[0]} - {yearRange[1]}
-                  </Typography>
-                  <Slider
-                    value={yearRange}
-                    onChange={handleYearRangeChange}
-                    valueLabelDisplay="auto"
-                    min={1000}
-                    max={2024}
-                    step={10}
-                    marks={[
-                      { value: 1000, label: '1000' },
-                      { value: 1500, label: '1500' },
-                      { value: 1800, label: '1800' },
-                      { value: 2024, label: '2024' },
-                    ]}
-                  />
-                </Box>
-              </Grid>
-            </Grid>
-            
-            <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-              <Button onClick={handleReset}>重置</Button>
-              <Button variant="contained" onClick={handleFilterApply}>
-                应用筛选
+          <div className="flex flex-wrap gap-3 items-center w-full md:w-auto justify-between md:justify-end">
+            <div className="inline-flex border border-border rounded-md p-1 bg-card">
+              <Button
+                variant={viewMode === 'grid' ? "default" : "ghost"}
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => setViewMode('grid')}
+              >
+                <GridIcon size={18} />
               </Button>
-            </Box>
-          </Paper>
-        </Collapse>
+              <Button
+                variant={viewMode === 'list' ? "default" : "ghost"}
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => setViewMode('list')}
+              >
+                <ListIcon size={18} />
+              </Button>
+            </div>
+            
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => window.location.reload()}
+            >
+              <RotateCw size={18} />
+            </Button>
+          </div>
+        </div>
+
+        {/* Search & Timeline Section */}
+        <div className="mb-10 space-y-6">
+            {/* Visual Timeline Filter - Main View */}
+            <div className="bg-muted/30 rounded-lg p-6 border border-border">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-serif font-semibold text-lg text-foreground">{t('collection.yearRange')}</h3>
+                    <div className="text-sm text-muted-foreground">
+                        {filters.beginYear || 1200} — {filters.endYear || 2024}
+                    </div>
+                </div>
+                <TimelineFilter 
+                  beginYear={filters.beginYear ? parseInt(filters.beginYear.toString()) : null}
+                  endYear={filters.endYear ? parseInt(filters.endYear.toString()) : null}
+                  onChange={(start, end) => {
+                    setFilters({
+                        beginYear: start ? start : null,
+                        endYear: end ? end : null
+                    });
+                    setLocalFilters(prev => ({
+                        ...prev,
+                        beginYear: start ? start.toString() : '',
+                        endYear: end ? end.toString() : ''
+                    }));
+                  }}
+                  className="w-full"
+                />
+            </div>
+
+            {/* Combined Search Input (Below Timeline) */}
+            <div className="relative">
+                <Input
+                    placeholder="搜索标题、艺术家或描述..."
+                    value={localFilters.search}
+                    onChange={(e) => {
+                        const val = e.target.value;
+                        setLocalFilters(prev => ({ ...prev, search: val }));
+                        // Debounce update to filters
+                        if (window.searchTimeout) clearTimeout(window.searchTimeout);
+                        window.searchTimeout = setTimeout(() => {
+                            setFilters({ ...filters, search: val });
+                            setPagination({ page: 1 });
+                        }, 500);
+                    }}
+                    className="pl-10 h-12 text-lg bg-background border-border shadow-sm text-foreground placeholder:text-muted-foreground"
+                />
+                <div className="absolute left-3 top-3.5 text-muted-foreground">
+                    <Filter size={20} />
+                </div>
+            </div>
+        </div>
         
-        {/* Active filters */}
+        {/* Top Artists Tags (Scrollable Grid) */}
+        <div className="mb-8">
+            <h3 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wide">热门艺术家</h3>
+            <div className="overflow-x-auto pb-4 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+                <div className="grid grid-rows-5 grid-flow-col gap-3 min-w-max">
+                    {TOP_ARTISTS_EN.map(artist => (
+                        <Button
+                            key={artist}
+                            variant={filters.artist === artist ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => {
+                                const newValue = filters.artist === artist ? '' : artist;
+                                setFilters({ ...filters, artist: newValue });
+                                setPagination({ page: 1 });
+                            }}
+                            className={cn(
+                                "rounded-md text-xs px-3 h-8 whitespace-nowrap justify-center font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
+                                filters.artist === artist && "bg-primary text-primary-foreground hover:bg-primary/90 shadow"
+                            )}
+                        >
+                            {ARTIST_NAME_MAP[artist] || artist}
+                        </Button>
+                    ))}
+                </div>
+            </div>
+        </div>
+        
+        {/* Classification Categories - Quick Filters */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+            <Button 
+              variant={!filters.classification ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilters({ ...filters, classification: '' })}
+              className="whitespace-nowrap flex-shrink-0 h-8 text-xs font-medium px-3 rounded-md shadow-sm"
+            >
+              全部
+            </Button>
+            {classifications.map((c) => (
+              <Button
+                key={c}
+                variant={filters.classification === c ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilters({ ...filters, classification: c })}
+                className="whitespace-nowrap flex-shrink-0 h-8 text-xs font-medium px-3 rounded-md shadow-sm"
+              >
+                {CLASSIFICATION_MAP[c] || c}
+              </Button>
+            ))}
+          </div>
+        </div>
+        
+        {/* Active Filters Display */}
         {activeFiltersCount > 0 && (
-          <Stack direction="row" spacing={1} sx={{ mb: 3, flexWrap: 'wrap', gap: 1 }}>
-            {localFilters.classification && (
-              <Chip
-                label={`分类: ${localFilters.classification}`}
-                onDelete={() =>
-                  setLocalFilters({ ...localFilters, classification: '' })
-                }
-              />
+          <div className="flex flex-wrap gap-2 mb-6">
+            {filters.classification && (
+              <Badge variant="secondary" className="gap-2">
+                分类: {filters.classification}
+                <button 
+                  onClick={() => setFilters({ ...filters, classification: '' })}
+                  className="ml-1 hover:text-neutral-900"
+                >
+                  <X size={14} />
+                </button>
+              </Badge>
             )}
-            {localFilters.department && (
-              <Chip
-                label={`部门: ${localFilters.department}`}
-                onDelete={() =>
-                  setLocalFilters({ ...localFilters, department: '' })
-                }
-              />
+            {filters.department && (
+              <Badge variant="secondary" className="gap-2">
+                部门: {filters.department}
+                <button 
+                  onClick={() => setFilters({ ...filters, department: '' })}
+                  className="ml-1 hover:text-neutral-900"
+                >
+                  <X size={14} />
+                </button>
+              </Badge>
             )}
-            {localFilters.artist && (
-              <Chip
-                label={`艺术家: ${localFilters.artist}`}
-                onDelete={() =>
-                  setLocalFilters({ ...localFilters, artist: '' })
-                }
-              />
+            {filters.artist && (
+              <Badge variant="secondary" className="gap-2">
+                艺术家: {filters.artist}
+                <button 
+                  onClick={() => setFilters({ ...filters, artist: '' })}
+                  className="ml-1 hover:text-neutral-900"
+                >
+                  <X size={14} />
+                </button>
+              </Badge>
             )}
-            {(yearRange[0] !== 1000 || yearRange[1] !== 2024) && (
-              <Chip
-                label={`年份: ${yearRange[0]} - ${yearRange[1]}`}
-                onDelete={() => {
-                  setYearRange([1000, 2024]);
-                  setLocalFilters({ ...localFilters, beginYear: '', endYear: '' });
-                }}
-              />
+            {(filters.beginYear || filters.endYear) && (
+              <Badge variant="secondary" className="gap-2">
+                年份: {filters.beginYear || '...'} - {filters.endYear || '...'}
+                <button 
+                  onClick={() => setFilters({ ...filters, beginYear: null, endYear: null })}
+                  className="ml-1 hover:text-neutral-900"
+                >
+                  <X size={14} />
+                </button>
+              </Badge>
             )}
-          </Stack>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="h-7 text-xs"
+              onClick={handleReset}
+            >
+              清除全部
+            </Button>
+          </div>
         )}
         
-        {/* Content */}
+        {/* Loading / Empty / Content */}
         {isLoading && objects.length === 0 ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-            <CircularProgress />
-          </Box>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, i) => (
+              <Card key={i}>
+                <Skeleton className="aspect-square w-full" />
+                <CardContent className="p-4 space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-3 w-2/3" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         ) : objects.length === 0 ? (
-          <Box sx={{ textAlign: 'center', py: 8 }}>
-            <Typography variant="h6" color="text.secondary">
-              未找到匹配的藏品
-            </Typography>
-            <Button onClick={handleReset} sx={{ mt: 2 }}>
+          <Card className="text-center py-20">
+            <CardContent>
+              {pagination.total > 0 ? (
+                <>
+                  <h3 className="text-2xl font-serif font-semibold mb-2">当前页无数据</h3>
+                  <p className="text-neutral-600 mb-6">您所在的页码 ({pagination.page}) 超出了结果范围</p>
+                  <Button onClick={() => setPagination({ page: 1 })}>
+                    返回第一页
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-2xl font-serif font-semibold mb-2">未找到匹配的藏品</h3>
+                  <p className="text-neutral-600 mb-6">尝试调整筛选条件或搜索词</p>
+                  <Button variant="outline" onClick={handleReset}>
               清除筛选条件
             </Button>
-          </Box>
+                </>
+              )}
+            </CardContent>
+          </Card>
         ) : (
           <>
-            {/* Objects grid/list */}
-            <Grid container spacing={3}>
+            <div className={cn(
+              "grid gap-6",
+              viewMode === 'grid' 
+                ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" 
+                : "grid-cols-1"
+            )}>
               {objects.map((object) => (
-                <Grid
-                  size={{
-                    xs: 12,
-                    sm: viewMode === 'grid' ? 6 : 12,
-                    md: viewMode === 'grid' ? 4 : 12,
-                    lg: viewMode === 'grid' ? 3 : 12,
-                  }}
-                  key={object.object_id || object.id}
-                >
+                <div key={object.object_id || object.id} className={viewMode === 'list' ? 'w-full' : ''}>
                   <ObjectCard object={object} viewMode={viewMode} />
-                </Grid>
+                </div>
               ))}
-            </Grid>
-            
-            {/* Loading indicator for infinite scroll */}
-            {isLoading && objects.length > 0 && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                <CircularProgress size={32} />
-              </Box>
-            )}
+            </div>
             
             {/* Pagination */}
             {pagination.totalPages > 1 && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                 <Pagination
-                  count={pagination.totalPages}
-                  page={pagination.page}
-                  onChange={handlePageChange}
-                  color="primary"
-                  size="large"
+                    currentPage={pagination.page}
+                    totalPages={pagination.totalPages}
+                    onPageChange={handlePageChange}
                 />
-              </Box>
             )}
+            
+            <ScrollDownButton />
           </>
         )}
-      </Container>
-    </Box>
+      </div>
+    </div>
   );
 };
 

@@ -1,20 +1,16 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
-  postgres:
-    image: postgres:15-alpine
-    container_name: nga-museum-db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: nga_museum
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+  # MongoDB
+  mongo:
+    image: mongo:latest
+    container_name: nga-museum-mongo
     ports:
-      - "5432:5432"
+      - "27017:27017"
+    volumes:
+      - ./mongo-data:/data/db
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
       interval: 10s
       timeout: 5s
       retries: 5
@@ -42,18 +38,14 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=nga_museum
-      - DB_USER=postgres
-      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - MONGO_URI=mongodb://mongo:27017/openart
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - CORS_ORIGIN=http://localhost:80
     ports:
       - "3001:3001"
     depends_on:
-      postgres:
+      mongo:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -71,6 +63,18 @@ services:
     depends_on:
       - backend
 
+  # Local Translator (Python)
+  translator:
+    image: python:3.10
+    container_name: nga-museum-translator
+    volumes:
+      - .:/app
+    working_dir: /app
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/openart
+    command: bash -c "pip install pymongo torch transformers tqdm sentencepiece protobuf accelerate && python backend/scripts/translate_local_hunyuan.py"
+    depends_on:
+      - mongo
+
 volumes:
-  postgres_data:
   redis_data:

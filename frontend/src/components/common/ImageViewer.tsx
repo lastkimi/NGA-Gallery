@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Box, Dialog, IconButton, Toolbar, AppBar, Typography } from '@mui/material';
-import { Close as CloseIcon } from '@mui/icons-material';
+import { X } from 'lucide-react';
 
 interface ImageViewerProps {
   open: boolean;
@@ -15,16 +14,16 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ open, onClose, imageUrl, titl
 
   useEffect(() => {
     if (open && imageUrl && viewerRef.current) {
-      // 清理之前的实例
+      // Clean up previous instance
       if (viewerInstanceRef.current) {
         viewerInstanceRef.current.destroy();
         viewerInstanceRef.current = null;
       }
 
-      // 动态导入OpenSeadragon
+      // Dynamic import OpenSeadragon
       import('openseadragon').then((OpenSeadragon) => {
         if (viewerRef.current && imageUrl) {
-          // IIIF URL格式转换 - OpenSeadragon需要info.json URL
+          // IIIF URL conversion
           const tileSource = imageUrl.endsWith('/info.json') ? imageUrl : `${imageUrl}/info.json`;
           
           viewerInstanceRef.current = OpenSeadragon.default({
@@ -72,35 +71,23 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ open, onClose, imageUrl, titl
   if (!open) return null;
 
   return (
-    <Dialog
-      fullScreen
-      open={open}
-      onClose={onClose}
-      sx={{
-        '& .MuiDialog-paper': {
-          bgcolor: 'rgba(0, 0, 0, 0.95)',
-        },
-      }}
-    >
-      <AppBar sx={{ position: 'relative', bgcolor: 'rgba(0, 0, 0, 0.8)' }}>
-        <Toolbar>
-          <Typography variant="h6" sx={{ flex: 1, color: 'white' }}>
-            {title || '图片查看器'}
-          </Typography>
-          <IconButton edge="end" color="inherit" onClick={onClose} aria-label="close">
-            <CloseIcon />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
-      <Box
+    <div className="fixed inset-0 z-[100] flex flex-col bg-black/95">
+      <div className="flex items-center justify-between p-4 bg-black/80 text-white">
+        <h3 className="text-lg font-medium truncate flex-1 pr-4">
+          {title || 'ImageViewer'}
+        </h3>
+        <button 
+          onClick={onClose} 
+          className="btn btn-ghost btn-circle btn-sm text-white hover:bg-white/20"
+        >
+          <X size={24} />
+        </button>
+      </div>
+      <div 
         ref={viewerRef}
-        sx={{
-          width: '100%',
-          height: 'calc(100vh - 64px)',
-          bgcolor: '#000',
-        }}
+        className="w-full flex-1 bg-black"
       />
-    </Dialog>
+    </div>
   );
 };
 

@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { query } from '../models/database';
+import { ObjectModel, ConstituentModel } from '../models/schemas';
 
 const router = Router();
 
@@ -17,63 +17,62 @@ router.get('/statistics', async (req: Request, res: Response, next: NextFunction
       dateRange,
       topArtists,
     ] = await Promise.all([
-      query('SELECT COUNT(*) as count FROM objects'),
-      query(`
-        SELECT classification, COUNT(*) as count 
-        FROM objects 
-        WHERE classification IS NOT NULL 
-        GROUP BY classification 
-        ORDER BY count DESC
-        LIMIT 20
-      `),
-      query(`
-        SELECT department, COUNT(*) as count 
-        FROM objects 
-        WHERE department IS NOT NULL 
-        GROUP BY department 
-        ORDER BY count DESC
-      `),
-      query(`
-        SELECT 
-          FLOOR(begin_year / 100) * 100 as century,
-          COUNT(*) as count 
-        FROM objects 
-        WHERE begin_year IS NOT NULL AND begin_year > 0
-        GROUP BY FLOOR(begin_year / 100) * 100
-        ORDER BY century
-      `),
-      query(`
-        SELECT 
-          MIN(begin_year) as earliest,
-          MAX(end_year) as latest
-        FROM objects 
-        WHERE begin_year IS NOT NULL AND begin_year > 0
-      `),
-      query(`
-        SELECT attribution, COUNT(*) as count 
-        FROM objects 
-        WHERE attribution IS NOT NULL AND attribution != ''
-        GROUP BY attribution 
-        ORDER BY count DESC
-        LIMIT 20
-      `),
+      ObjectModel.countDocuments(),
+      ObjectModel.aggregate([
+        { $match: { classification: { $nin: [null, ''] } } },
+        { $group: { _id: '$classification', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 20 }
+      ]),
+      ObjectModel.aggregate([
+        { $match: { department: { $nin: [null, ''] } } },
+        { $group: { _id: '$department', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 20 }
+      ]),
+      ObjectModel.aggregate([
+        { $match: { begin_year: { $gt: 0 } } },
+        { $project: { century: { $multiply: [{ $floor: { $divide: ['$begin_year', 100] } }, 100] } } },
+        { $group: { _id: '$century', count: { $sum: 1 } } },
+        { $sort: { _id: 1 } }
+      ]),
+      ObjectModel.aggregate([
+        { $match: { begin_year: { $gt: 0 } } },
+        { $group: { _id: null, earliest: { $min: '$begin_year' }, latest: { $max: { $ifNull: ['$end_year', '$begin_year'] } } } }
+      ]),
+      ObjectModel.aggregate([
+        { $match: { attribution: { $nin: [null, ''] } } },
+        { $group: { _id: '$attribution', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 20 }
+      ]),
     ]);
     
     res.json({
-      totalObjects: parseInt(totalObjects.rows[0].count, 10),
-      byClassification: byClassification.rows,
-      byDepartment: byDepartment.rows,
-      byCentury: byCentury.rows.map(row => ({
-        century: `${row.century}s`,
-        count: parseInt(row.count, 10),
+      totalObjects,
+      byClassification: byClassification.map(row => ({
+        classification: row._id,
+        count: row.count,
+      })),
+      byDepartment: byDepartment.map(row => ({
+        department: row._id,
+        count: row.count,
+      })),
+      byCentury: byCentury.map(row => ({
+        century: `${row._id}s`,
+        count: row.count,
       })),
       dateRange: {
-        earliest: parseInt(dateRange.rows[0].earliest, 10),
-        latest: parseInt(dateRange.rows[0].latest, 10),
+        earliest: dateRange[0]?.earliest || 1000,
+        latest: dateRange[0]?.latest || 2024,
       },
-      topArtists: topArtists.rows,
+      topArtists: topArtists.map(row => ({
+        attribution: row._id,
+        count: row.count,
+      })),
     });
   } catch (error) {
+    console.error('Error fetching statistics:', error);
     next(error);
   }
 });
@@ -93,25 +92,40 @@ router.get('/timeline', async (req: Request, res: Response, next: NextFunction) 
     const start = startYear ? parseInt(startYear as string, 10) : 1000;
     const end = endYear ? parseInt(endYear as string, 10) : 2024;
     
-    const result = await query(
-      `SELECT 
-        FLOOR(begin_year / $1) * $1 as period_start,
-        COUNT(*) as count
-       FROM objects 
-       WHERE begin_year IS NOT NULL 
-         AND begin_year >= $2 
-         AND begin_year <= $3
-       GROUP BY FLOOR(begin_year / $1) * $1
-       ORDER BY period_start`,
-      [intervalValue, start, end]
-    );
+    const result = await ObjectModel.aggregate([
+      { 
+        $match: { 
+          begin_year: { $gte: start, $lte: end } 
+        } 
+      },
+      {
+        $project: {
+          period_start: { 
+            $multiply: [
+              { $floor: { $divide: ['$begin_year', intervalValue] } }, 
+              intervalValue
+            ] 
+          }
+        }
+      },
+      { 
+        $group: { 
+          _id: '$period_start', 
+          count: { $sum: 1 } 
+        } 
+      },
+      { $sort: { _id: 1 } }
+    ]);
     
-    res.json(result.rows.map(row => ({
-      period: `${row.period_start}s`,
-      count: parseInt(row.count, 10),
-      startYear: parseInt(row.period_start, 10),
-    })));
+    const timelineData = result.map(row => ({
+      period: `${row._id}s`,
+      count: row.count,
+      startYear: row._id,
+    }));
+    
+    res.json(timelineData);
   } catch (error) {
+    console.error('Error fetching timeline:', error);
     next(error);
   }
 });
@@ -122,35 +136,30 @@ router.get('/timeline', async (req: Request, res: Response, next: NextFunction) 
  */
 router.get('/artist-network', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Get artists with their work counts
-    const artistsResult = await query(
-      `SELECT 
-         id,
-         constituent_id,
-         preferred_name,
-         nationality,
-         begin_year,
-         end_year,
-         (SELECT COUNT(*) FROM objects o WHERE o.attribution ILIKE '%' || c.preferred_name || '%') as work_count
-       FROM constituents c
-       WHERE is_artist = true
-       ORDER BY work_count DESC
-       LIMIT 100`
-    );
+    // MongoDB aggregation to get top artists by work count
+    // Using ObjectModel attribution field since relationships are not fully normalized
+    const topArtists = await ObjectModel.aggregate([
+      { $match: { attribution: { $nin: [null, ''] } } },
+      { $group: { _id: '$attribution', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 100 }
+    ]);
     
-    // Create nodes and links for network graph
-    const nodes = artistsResult.rows.map((artist, index) => ({
-      id: artist.constituent_id,
-      name: artist.preferred_name,
-      nationality: artist.nationality,
-      workCount: parseInt(artist.work_count, 10),
-      group: artist.nationality || 'Unknown',
+    // Create nodes
+    const nodes = topArtists.map((artist, index) => ({
+      id: `artist-${index}`, // Use dummy ID as we don't have constituent ID from grouping
+      name: artist._id,
+      nationality: 'Unknown', // Need to lookup
+      workCount: artist.count,
+      group: 'Artist'
     }));
     
-    // Create links (simplified - in reality would need more complex logic)
+    // Try to enrich with nationality if possible (optional)
+    // For now returning simplified data
+    
+    // Create links
     const links = [];
     for (let i = 0; i < nodes.length - 1; i++) {
-      // Connect top artists to each other as a simplified network
       if (i < 20) {
         links.push({
           source: nodes[i].id,
@@ -165,17 +174,16 @@ router.get('/artist-network', async (req: Request, res: Response, next: NextFunc
       links,
     });
   } catch (error) {
+    console.error('Error fetching artist network:', error);
     next(error);
   }
 });
 
 /**
  * GET /api/analysis/color-distribution
- * Get color distribution data (placeholder - would need image processing)
  */
 router.get('/color-distribution', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Placeholder data - in production this would analyze actual images
     res.json({
       description: 'Color analysis would require processing all images',
       averageDominantColors: [
@@ -187,6 +195,7 @@ router.get('/color-distribution', async (req: Request, res: Response, next: Next
       ],
     });
   } catch (error) {
+    console.error('Error fetching color distribution:', error);
     next(error);
   }
 });

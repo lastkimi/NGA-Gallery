@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { query } from '../models/database';
+import { objectsService } from '../services/objects';
+import { ObjectModel } from '../models/schemas';
 
 const router = Router();
 
@@ -15,43 +16,16 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       return res.status(400).json({ error: 'Query parameter "q" is required' });
     }
     
-    const searchTerm = `%${q}%`;
-    const offset = (parseInt(page as string, 10) - 1) * parseInt(limit as string, 10);
-    
-    // Search query
-    const result = await query(
-      `SELECT * FROM objects 
-       WHERE 
-         title ILIKE $1 OR 
-         attribution ILIKE $1 OR 
-         medium ILIKE $1 OR
-         display_date ILIKE $1
-       ORDER BY id
-       LIMIT $2 OFFSET $3`,
-      [searchTerm, parseInt(limit as string, 10), offset]
-    );
-    
-    // Get total count
-    const countResult = await query(
-      `SELECT COUNT(*) as total FROM objects 
-       WHERE 
-         title ILIKE $1 OR 
-         attribution ILIKE $1 OR 
-         medium ILIKE $1 OR
-         display_date ILIKE $1`,
-      [searchTerm]
-    );
-    
-    const total = parseInt(countResult.rows[0].total, 10);
+    const result = await objectsService.getObjects({
+      search: q as string
+    }, {
+      page: parseInt(page as string, 10),
+      limit: parseInt(limit as string, 10)
+    });
     
     res.json({
-      data: result.rows,
-      pagination: {
-        page: parseInt(page as string, 10),
-        limit: parseInt(limit as string, 10),
-        total,
-        totalPages: Math.ceil(total / parseInt(limit as string, 10)),
-      },
+      data: result.data,
+      pagination: result.pagination,
       query: q,
     });
   } catch (error) {
@@ -71,17 +45,19 @@ router.get('/suggestions', async (req: Request, res: Response, next: NextFunctio
       return res.json([]);
     }
     
-    const searchTerm = `${q}%`;
+    const regex = new RegExp(`^${q}`, 'i'); // Starts with
     
-    const result = await query(
-      `SELECT DISTINCT title, attribution FROM objects 
-       WHERE title ILIKE $1 OR attribution ILIKE $1
-       ORDER BY title
-       LIMIT $2`,
-      [searchTerm, parseInt(limit as string, 10)]
-    );
+    const results = await ObjectModel.find({
+      $or: [
+        { title: regex },
+        { attribution: regex }
+      ]
+    })
+    .select('title attribution')
+    .limit(parseInt(limit as string, 10));
     
-    res.json(result.rows);
+    // Format to match previous SQL output structure
+    res.json(results.map(r => ({ title: r.title, attribution: r.attribution })));
   } catch (error) {
     next(error);
   }

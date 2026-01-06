@@ -1,19 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Box,
-  Container,
-  Typography,
-  Paper,
-  CircularProgress,
-  Alert,
-  Slider,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Grid,
-} from '@mui/material';
-import {
   BarChart,
   Bar,
   XAxis,
@@ -23,7 +9,13 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { analysisApi } from '../services/api';
-import Header from '../components/common/Header';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 interface TimelineData {
   period: string;
@@ -48,14 +40,18 @@ const TimelinePage: React.FC = () => {
   useEffect(() => {
     const fetchTimeline = async () => {
       try {
+        setLoading(true);
+        setError(null);
         const timelineData = await analysisApi.getTimeline(
           startYear,
           endYear,
           interval
         );
+        console.log('Timeline response:', timelineData);
         setData(timelineData);
-      } catch (err) {
-        setError('无法加载时间线数据');
+      } catch (err: any) {
+        const errorMessage = err?.response?.data?.message || err?.message || '无法加载时间线数据';
+        setError(errorMessage);
         console.error('Error fetching timeline:', err);
       } finally {
         setLoading(false);
@@ -65,147 +61,177 @@ const TimelinePage: React.FC = () => {
     fetchTimeline();
   }, [startYear, endYear, interval]);
   
-  const handleYearRangeChange = (_: Event, newValue: number | number[]) => {
-    const values = newValue as number[];
-    setStartYear(values[0]);
-    setEndYear(values[1]);
-  };
-  
   if (loading) {
     return (
-      <Box sx={{ minHeight: '100vh', bgcolor: '#fafafa' }}>
-        <Header />
-        <Container maxWidth="lg" sx={{ py: 8, textAlign: 'center' }}>
-          <CircularProgress />
-        </Container>
-      </Box>
+      <div className="bg-white min-h-screen py-12">
+        <div className="container mx-auto px-4">
+          <Skeleton className="h-10 w-48 mb-8" />
+          <Card className="mb-8">
+            <CardContent className="p-6">
+              <Skeleton className="h-20 w-full" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <Skeleton className="h-96 w-full" />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     );
   }
   
   if (error) {
     return (
-      <Box sx={{ minHeight: '100vh', bgcolor: '#fafafa' }}>
-        <Header />
-        <Container maxWidth="lg" sx={{ py: 8 }}>
-          <Alert severity="error">{error}</Alert>
-        </Container>
-      </Box>
+      <div className="container mx-auto px-4 py-8 min-h-screen bg-white">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
     );
   }
   
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#fafafa' }}>
-      <Header />
-      
-      <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 600, mb: 4 }}>
-          艺术时间线
-        </Typography>
+    <div className="bg-white min-h-screen pb-12">
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl md:text-4xl font-serif font-bold mb-8">艺术时间线</h1>
         
         {/* Controls */}
-        <Paper sx={{ p: 3, mb: 4 }}>
-          <Grid container spacing={3} alignItems="center">
-            <Grid size={{ xs: 12, md: 4 }}>
-              <FormControl fullWidth>
-                <InputLabel>时间间隔</InputLabel>
-                <Select
-                  value={interval}
-                  label="时间间隔"
-                  onChange={(e) => setInterval(e.target.value)}
-                >
-                  {intervals.map((int) => (
-                    <MenuItem key={int.value} value={int.value}>
-                      {int.label}
-                    </MenuItem>
-                  ))}
+        <Card className="mb-8">
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="interval">时间间隔</Label>
+                <Select value={interval} onValueChange={setInterval}>
+                  <SelectTrigger id="interval">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {intervals.map((int) => (
+                      <SelectItem key={int.value} value={int.value}>
+                        {int.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, md: 8 }}>
-              <Typography gutterBottom>年份范围: {startYear} - {endYear}</Typography>
-              <Slider
-                value={[startYear, endYear]}
-                onChange={handleYearRangeChange}
-                valueLabelDisplay="auto"
-                min={1000}
-                max={2024}
-                step={interval === 'century' ? 100 : interval === 'decade' ? 10 : 1}
-              />
-            </Grid>
-          </Grid>
-        </Paper>
+              </div>
+              
+              <div className="md:col-span-2 space-y-4">
+                <Label>年份范围: {startYear} - {endYear}</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="startYear">起始年份</Label>
+                    <Input
+                      id="startYear"
+                      type="number"
+                      min="1000"
+                      max={endYear}
+                      value={startYear}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value) || 1000;
+                        if (value >= 1000 && value <= endYear) {
+                          setStartYear(value);
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="endYear">结束年份</Label>
+                    <Input
+                      id="endYear"
+                      type="number"
+                      min={startYear}
+                      max="2024"
+                      value={endYear}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value) || 2024;
+                        if (value >= startYear && value <= 2024) {
+                          setEndYear(value);
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
         
         {/* Timeline chart */}
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" sx={{ mb: 3 }}>
-            作品数量时间分布
-          </Typography>
-          <ResponsiveContainer width="100%" height={500}>
-            <BarChart
-              data={data}
-              margin={{ top: 20, right: 30, left: 20, bottom: 100 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="period"
-                angle={-45}
-                textAnchor="end"
-                height={80}
-                interval={Math.ceil(data.length / 20) - 1}
-              />
-              <YAxis />
-              <Tooltip
-                formatter={(value: number | undefined) => [value ?? 0, '作品数量']}
-                labelFormatter={(label) => `${label}年代`}
-              />
-              <Bar dataKey="count" fill="#8884d8" name="作品数量" />
-            </BarChart>
-          </ResponsiveContainer>
-        </Paper>
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="font-serif">作品数量时间分布</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[500px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={data}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis
+                    dataKey="period"
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    interval={Math.ceil(data.length / 20) - 1}
+                    tick={{ fontSize: 12 }}
+                  />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip
+                    formatter={(value: number | undefined) => [value ?? 0, '作品数量']}
+                    labelFormatter={(label) => `${label}年代`}
+                    contentStyle={{ 
+                      borderRadius: '8px', 
+                      border: '1px solid #e5e7eb', 
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                      backgroundColor: 'white'
+                    }}
+                  />
+                  <Bar dataKey="count" fill="#8884d8" name="作品数量" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
         
         {/* Statistics */}
-        <Grid container spacing={3} sx={{ mt: 4 }}>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Paper sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h6" color="text.secondary">
-                总计作品
-              </Typography>
-              <Typography variant="h3" sx={{ fontWeight: 700, color: 'primary.main' }}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="p-6 text-center">
+              <h3 className="text-sm font-medium text-neutral-500 uppercase tracking-wide mb-2">总计作品</h3>
+              <div className="text-4xl md:text-5xl font-serif font-bold text-neutral-900">
                 {data.reduce((sum, item) => sum + item.count, 0).toLocaleString()}
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Paper sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h6" color="text.secondary">
-                时间跨度
-              </Typography>
-              <Typography variant="h3" sx={{ fontWeight: 700, color: 'secondary.main' }}>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6 text-center">
+              <h3 className="text-sm font-medium text-neutral-500 uppercase tracking-wide mb-2">时间跨度</h3>
+              <div className="text-4xl md:text-5xl font-serif font-bold text-neutral-900">
                 {endYear - startYear}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                年
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Paper sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h6" color="text.secondary">
-                最密集时期
-              </Typography>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'success.main' }}>
+                <span className="text-lg ml-2 font-normal text-neutral-500">年</span>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6 text-center">
+              <h3 className="text-sm font-medium text-neutral-500 uppercase tracking-wide mb-2">最密集时期</h3>
+              <div className="text-2xl md:text-3xl font-serif font-bold text-neutral-900 mb-1">
                 {data.reduce((max, item) =>
                   item.count > max.count ? item : max
                 , data[0] || { period: '', count: 0 }).period}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                作品最多
-              </Typography>
-            </Paper>
-          </Grid>
-        </Grid>
-      </Container>
-    </Box>
+              </div>
+              <div className="text-sm text-neutral-500">作品最多</div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
   );
 };
 

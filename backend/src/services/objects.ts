@@ -1,5 +1,4 @@
-import { query } from '../models/database';
-import { Object } from '../models/types';
+import { ObjectModel, IObject } from '../models/schemas';
 
 export interface ObjectFilters {
   search?: string;
@@ -9,6 +8,7 @@ export interface ObjectFilters {
   beginYear?: number;
   endYear?: number;
   medium?: string;
+  hasImage?: boolean;
 }
 
 export interface PaginationParams {
@@ -19,7 +19,7 @@ export interface PaginationParams {
 }
 
 export interface ObjectListResponse {
-  data: Object[];
+  data: IObject[];
   pagination: {
     page: number;
     limit: number;
@@ -33,76 +33,73 @@ export class ObjectsService {
    * Get objects with filters and pagination
    */
   async getObjects(filters: ObjectFilters, pagination: PaginationParams): Promise<ObjectListResponse> {
-    const { page, limit, sortBy = 'id', sortOrder = 'asc' } = pagination;
-    const offset = (page - 1) * limit;
+    const { page, limit, sortBy = 'object_id', sortOrder = 'asc' } = pagination;
+    const skip = (page - 1) * limit;
     
-    // Build dynamic query
-    let whereClause = 'WHERE 1=1';
-    const params: any[] = [];
-    let paramIndex = 1;
+    // Build query
+    const query: any = {};
     
     if (filters.search) {
-      whereClause += ` AND (
-        o.title ILIKE $${paramIndex} OR 
-        o.attribution ILIKE $${paramIndex} OR
-        o.medium ILIKE $${paramIndex}
-      )`;
-      params.push(`%${filters.search}%`);
-      paramIndex++;
+      const searchTerms = filters.search.trim().split(/\s+/).filter(term => term.length > 0);
+      if (searchTerms.length > 0) {
+        // AND logic for search terms, OR logic for fields
+        query.$and = searchTerms.map(term => {
+          const regex = new RegExp(term, 'i');
+          return {
+            $or: [
+              { title: regex },
+              { attribution: regex },
+              { medium: regex }
+            ]
+          };
+        });
+      }
     }
     
     if (filters.classification) {
-      whereClause += ` AND o.classification = $${paramIndex}`;
-      params.push(filters.classification);
-      paramIndex++;
+      query.classification = filters.classification;
     }
     
     if (filters.department) {
-      whereClause += ` AND o.department = $${paramIndex}`;
-      params.push(filters.department);
-      paramIndex++;
+      query.department = filters.department;
     }
     
     if (filters.artist) {
-      whereClause += ` AND o.attribution ILIKE $${paramIndex}`;
-      params.push(`%${filters.artist}%`);
-      paramIndex++;
+      // Escape special regex chars
+      const safeArtist = filters.artist.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      // Use word boundaries to avoid substring matches (e.g. "Dali" matching "Medalist")
+      // We use a broader boundary check to handle cases where names might be at start/end or surrounded by punctuation
+      query.attribution = new RegExp(`\\b${safeArtist}\\b`, 'i');
     }
     
     if (filters.beginYear) {
-      whereClause += ` AND o.begin_year >= $${paramIndex}`;
-      params.push(filters.beginYear);
-      paramIndex++;
+      query.begin_year = { $gte: filters.beginYear };
     }
     
     if (filters.endYear) {
-      whereClause += ` AND o.end_year <= $${paramIndex}`;
-      params.push(filters.endYear);
-      paramIndex++;
+      // Ensure we merge with existing query if beginYear is set
+      query.end_year = { $lte: filters.endYear };
     }
     
     if (filters.medium) {
-      whereClause += ` AND o.medium ILIKE $${paramIndex}`;
-      params.push(`%${filters.medium}%`);
-      paramIndex++;
+      query.medium = new RegExp(filters.medium, 'i');
+    }
+
+    // Default to only showing objects with images unless explicitly requested otherwise
+    if (filters.hasImage !== false) {
+      query['images.0'] = { $exists: true };
     }
     
-    // Count total
-    const countQuery = `SELECT COUNT(*) as total FROM objects o ${whereClause}`;
-    const countResult = await query(countQuery, params);
-    const total = parseInt(countResult.rows[0].total, 10);
+    const sort: any = {};
+    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
     
-    // Get paginated results
-    const dataQuery = `
-      SELECT * FROM objects o
-      ${whereClause}
-      ORDER BY o.${sortBy} ${sortOrder.toUpperCase()}
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-    `;
-    params.push(limit, offset);
-    
-    const result = await query(dataQuery, params);
-    const data = result.rows;
+    const [total, data] = await Promise.all([
+      ObjectModel.countDocuments(query),
+      ObjectModel.find(query)
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+    ]);
     
     return {
       data,
@@ -118,47 +115,44 @@ export class ObjectsService {
   /**
    * Get single object by ID
    */
-  async getObjectById(objectId: string): Promise<Object | null> {
-    const result = await query(
-      'SELECT * FROM objects WHERE object_id = $1',
-      [objectId]
-    );
-    return result.rows[0] || null;
+  async getObjectById(objectId: string): Promise<IObject | null> {
+    return ObjectModel.findOne({ object_id: objectId });
   }
   
   /**
    * Get object with images and constituents
+   * In MongoDB, images are embedded. Constituents logic was flaky in SQL version,
+   * here we can query ConstituentModel if we have a way to link them.
+   * For now, just return object as images are already embedded.
    */
   async getObjectWithDetails(objectId: string) {
-    const objectResult = await query(
-      `SELECT * FROM objects WHERE object_id = $1`,
-      [objectId]
-    );
+    const object = await ObjectModel.findOne({ object_id: objectId });
+    if (!object) return null;
     
-    if (!objectResult.rows[0]) {
-      return null;
-    }
-    
-    const object = objectResult.rows[0];
-    
-    // Get images
-    const imagesResult = await query(
-      `SELECT * FROM images WHERE object_id = $1 ORDER BY sequence`,
-      [object.id]
-    );
-    
-    // Get constituents
-    const constituentsResult = await query(
-      `SELECT c.* FROM constituents c
-       JOIN objects_constituents oc ON c.constituent_id = oc.constituent_id
-       WHERE oc.object_id = $1`,
-      [object.id]
-    );
+    // If we had constituent links, we would query them here.
+    // Assuming for now the constituent data in Object (attribution) is sufficient 
+    // or we don't have the link data imported.
+    const constituents: any[] = []; 
     
     return {
-      ...object,
-      images: imagesResult.rows,
-      constituents: constituentsResult.rows,
+      ...object.toObject(),
+      constituents,
+    };
+  }
+  
+  /**
+   * Get statistics
+   */
+  async getStatistics() {
+    const [total, withImages] = await Promise.all([
+      ObjectModel.countDocuments(),
+      ObjectModel.countDocuments({ 'images.0': { $exists: true } }),
+    ]);
+    
+    return {
+      totalObjects: total,
+      totalImages: withImages,
+      totalArtists: 0, // Need count from ConstituentModel if imported
     };
   }
   
@@ -166,37 +160,14 @@ export class ObjectsService {
    * Get all classifications
    */
   async getClassifications(): Promise<string[]> {
-    const result = await query(
-      'SELECT DISTINCT classification FROM objects WHERE classification IS NOT NULL ORDER BY classification'
-    );
-    return result.rows.map(row => row.classification);
+    return ObjectModel.distinct('classification', { classification: { $ne: null } });
   }
   
   /**
    * Get all departments
    */
   async getDepartments(): Promise<string[]> {
-    const result = await query(
-      'SELECT DISTINCT department FROM objects WHERE department IS NOT NULL ORDER BY department'
-    );
-    return result.rows.map(row => row.department);
-  }
-  
-  /**
-   * Get statistics
-   */
-  async getStatistics() {
-    const [totalObjects, totalImages, totalArtists] = await Promise.all([
-      query('SELECT COUNT(*) as count FROM objects'),
-      query('SELECT COUNT(*) as count FROM images'),
-      query('SELECT COUNT(DISTINCT constituent_id) as count FROM objects_constituents'),
-    ]);
-    
-    return {
-      totalObjects: parseInt(totalObjects.rows[0].count, 10),
-      totalImages: parseInt(totalImages.rows[0].count, 10),
-      totalArtists: parseInt(totalArtists.rows[0].count, 10),
-    };
+    return ObjectModel.distinct('department', { department: { $ne: null } });
   }
 }
 

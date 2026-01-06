@@ -1,8 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { imagesService } from '../services/images';
 import { NotFoundError } from '../middleware/errorHandler';
-import path from 'path';
-import fs from 'fs';
 
 const router = Router();
 
@@ -54,27 +52,18 @@ router.get('/:uuid', async (req: Request, res: Response, next: NextFunction) => 
 
 /**
  * GET /api/images/:uuid/thumbnail
- * Get image thumbnail
+ * Get image thumbnail (Redirect to IIIF)
  */
 router.get('/:uuid/thumbnail', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { uuid } = req.params;
     const image = await imagesService.getImageByUuid(uuid);
     
-    if (!image || !image.thumb_path) {
+    if (!image || !image.iiif_thumb_url) {
       throw new NotFoundError('Thumbnail');
     }
     
-    if (fs.existsSync(image.thumb_path)) {
-      res.sendFile(image.thumb_path);
-    } else {
-      // Fallback to IIIF thumbnail URL
-      if (image.iiif_thumb_url) {
-        res.redirect(image.iiif_thumb_url);
-      } else {
-        throw new NotFoundError('Thumbnail');
-      }
-    }
+    res.redirect(image.iiif_thumb_url);
   } catch (error) {
     next(error);
   }
@@ -82,22 +71,20 @@ router.get('/:uuid/thumbnail', async (req: Request, res: Response, next: NextFun
 
 /**
  * GET /api/images/:uuid/preview
- * Get image preview
+ * Get image preview (Redirect to IIIF)
  */
 router.get('/:uuid/preview', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { uuid } = req.params;
     const image = await imagesService.getImageByUuid(uuid);
     
-    if (!image || !image.preview_path) {
+    if (!image || !image.iiif_url) {
       throw new NotFoundError('Preview');
     }
     
-    if (fs.existsSync(image.preview_path)) {
-      res.sendFile(image.preview_path);
-    } else {
-      throw new NotFoundError('Preview');
-    }
+    // IIIF URL for preview size (e.g. 1200px width)
+    const previewUrl = `${image.iiif_url}/full/1200,/0/default.jpg`;
+    res.redirect(previewUrl);
   } catch (error) {
     next(error);
   }
@@ -105,27 +92,20 @@ router.get('/:uuid/preview', async (req: Request, res: Response, next: NextFunct
 
 /**
  * GET /api/images/:uuid/full
- * Get full resolution image
+ * Get full resolution image (Redirect to IIIF)
  */
 router.get('/:uuid/full', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { uuid } = req.params;
     const image = await imagesService.getImageByUuid(uuid);
     
-    if (!image || !image.full_path) {
+    if (!image || !image.iiif_url) {
       throw new NotFoundError('Full image');
     }
     
-    if (fs.existsSync(image.full_path)) {
-      res.sendFile(image.full_path);
-    } else {
-      // Fallback to IIIF URL
-      if (image.iiif_url) {
-        res.redirect(image.iiif_url);
-      } else {
-        throw new NotFoundError('Full image');
-      }
-    }
+    // IIIF URL for full size
+    const fullUrl = `${image.iiif_url}/full/full/0/default.jpg`;
+    res.redirect(fullUrl);
   } catch (error) {
     next(error);
   }

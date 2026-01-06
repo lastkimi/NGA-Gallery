@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import CollectionPage from './pages/CollectionPage';
 import ObjectDetailPage from './pages/ObjectDetailPage';
@@ -9,74 +9,68 @@ import TimelinePage from './pages/TimelinePage';
 import AboutPage from './pages/AboutPage';
 import SearchPage from './pages/SearchPage';
 
-// Create theme
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#ed6c02',
-    },
-    background: {
-      default: '#fafafa',
-    },
-  },
-  typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-    h1: {
-      fontWeight: 700,
-    },
-    h2: {
-      fontWeight: 700,
-    },
-    h4: {
-      fontWeight: 600,
-    },
-  },
-  components: {
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          borderRadius: 12,
-        },
-      },
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-          textTransform: 'none',
-        },
-      },
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          borderRadius: 12,
-        },
-      },
-    },
-  },
-});
+// Error Boundary Component
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-white">
+          <div className="text-center p-8">
+            <h1 className="text-2xl font-bold mb-4 text-red-600">出现错误</h1>
+            <p className="text-neutral-600 mb-4">{this.state.error?.message || '未知错误'}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-neutral-900 text-white rounded hover:bg-neutral-800"
+            >
+              刷新页面
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+import ScrollToTopButton from './components/common/ScrollToTopButton';
+import ScrollToTop from './components/common/ScrollToTop';
 
 const App: React.FC = () => {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <ErrorBoundary>
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/collection" element={<CollectionPage />} />
-          <Route path="/object/:id" element={<ObjectDetailPage />} />
-          <Route path="/search" element={<CollectionPage />} />
-          <Route path="/analysis" element={<AnalysisPage />} />
-          <Route path="/timeline" element={<TimelinePage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/search" element={<SearchPage />} />
-        </Routes>
+        <ScrollToTop />
+        <Layout>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/collection" element={<CollectionPage />} />
+            <Route path="/object/:id" element={<ObjectDetailPage />} />
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/analysis" element={<AnalysisPage />} />
+            <Route path="/timeline" element={<TimelinePage />} />
+            <Route path="/about" element={<AboutPage />} />
+          </Routes>
+          <ScrollToTopButton />
+        </Layout>
       </BrowserRouter>
-    </ThemeProvider>
+    </ErrorBoundary>
   );
 };
 

@@ -32,8 +32,11 @@ coverage/
 # Data files (keep structure but not large files)
 data/raw/
 data/images/
+backend/data/
 *.csv
 *.json.gz
+backend/.cache/
+backend/cache.json
 
 # Temporary files
 tmp/
@@ -52,6 +55,10 @@ Thumbs.db
 *.db
 *.sqlite
 *.sqlite3
+mongo-data/
 
 # Docker
 .dockerignore
+
+# Embedded repos
+universal-translator-tool/

@@ -1,0 +1,6 @@
+CONTAINER ID   IMAGE                  COMMAND                  CREATED        STATUS                 PORTS                                             NAMES
+355156d21caf   openart-backend        "docker-entrypoint.s…"   2 hours ago    Up 2 hours             0.0.0.0:3001->3001/tcp, [::]:3001->3001/tcp       nga-museum-backend
+0c5d167ffae1   openart-frontend       "/docker-entrypoint.…"   3 hours ago    Up 3 hours             0.0.0.0:80->80/tcp, [::]:80->80/tcp               nga-museum-frontend
+d0e61ab28629   mongo:latest           "docker-entrypoint.s…"   3 hours ago    Up 3 hours (healthy)   0.0.0.0:27017->27017/tcp, [::]:27017->27017/tcp   nga-museum-mongo
+0804cce241b3   redis:7-alpine         "docker-entrypoint.s…"   3 hours ago    Up 3 hours (healthy)   0.0.0.0:6379->6379/tcp, [::]:6379->6379/tcp       nga-museum-redis
+c86c9d695137   missuo/deeplx:latest   "/app/deeplx"            14 hours ago   Up 14 hours            0.0.0.0:1188->1188/tcp, [::]:1188->1188/tcp       wga-deeplx

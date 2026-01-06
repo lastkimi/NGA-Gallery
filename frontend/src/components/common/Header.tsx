@@ -1,46 +1,22 @@
 import React, { useState } from 'react';
-import {
-  AppBar,
-  Toolbar,
-  Typography,
-  Container,
-  Box,
-  TextField,
-  InputAdornment,
-  IconButton,
-  Button,
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  Menu as MenuIcon,
-  Home as HomeIcon,
-  Collections as CollectionsIcon,
-  Timeline as TimelineIcon,
-  Analytics as AnalyticsIcon,
-  Info as InfoIcon,
-} from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
+import { Search, Menu, Home, Image, Clock, BarChart2, Info, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import LanguageSwitcher from './LanguageSwitcher';
+import ThemeToggle from './ThemeToggle';
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ onSearch }) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { t } = useTranslation();
   const navigate = useNavigate();
-  
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (onSearch) {
@@ -48,140 +24,88 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
     }
     navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
   };
-  
+
   const menuItems = [
-    { text: '首页', icon: <HomeIcon />, path: '/' },
-    { text: '藏品', icon: <CollectionsIcon />, path: '/collection' },
-    { text: '时间线', icon: <TimelineIcon />, path: '/timeline' },
-    { text: '分析', icon: <AnalyticsIcon />, path: '/analysis' },
-    { text: '关于', icon: <InfoIcon />, path: '/about' },
+    { text: t('common.home'), icon: <Home size={18} />, path: '/' },
+    { text: t('common.collection'), icon: <Image size={18} />, path: '/collection' },
+    { text: t('common.timeline'), icon: <Clock size={18} />, path: '/timeline' },
+    { text: t('common.analysis'), icon: <BarChart2 size={18} />, path: '/analysis' },
+    { text: t('common.about'), icon: <Info size={18} />, path: '/about' },
   ];
-  
+
   return (
-    <AppBar position="sticky" color="default" elevation={1}>
-      <Container maxWidth="xl">
-        <Toolbar disableGutters>
+    <header className="sticky top-0 z-50 w-full border-b border-neutral-200/80 dark:border-neutral-800/80 bg-white/95 dark:bg-background backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:supports-[backdrop-filter]:bg-background">
+      <div className="container mx-auto px-4">
+        <div className="flex h-16 md:h-20 items-center justify-between">
           {/* Logo */}
-          <Typography
-            variant="h6"
-            noWrap
-            component={Link}
-            to="/"
-            sx={{
-              mr: 2,
-              display: 'flex',
-              fontWeight: 700,
-              color: 'inherit',
-              textDecoration: 'none',
-              flexGrow: isMobile ? 1 : 0,
-            }}
-          >
-            NGA 线上博物馆
-          </Typography>
+          <Link to="/" className="flex items-center space-x-2 group">
+            <h1 className="text-xl md:text-2xl font-serif font-bold tracking-tight text-neutral-900 dark:text-neutral-900 group-hover:text-neutral-700 dark:group-hover:text-neutral-900 transition-colors">
+              NGA 线上博物馆
+            </h1>
+          </Link>
           
-          {/* Search bar - desktop only */}
-          {!isMobile && (
-            <Box
-              component="form"
-              onSubmit={handleSearch}
-              sx={{ flexGrow: 1, mx: 4, maxWidth: 600 }}
-            >
-              <TextField
-                fullWidth
-                size="small"
-                placeholder="搜索藏品、艺术家..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Box>
-          )}
-          
-          {/* Desktop menu */}
-          {!isMobile && (
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              {menuItems.map((item) => (
-                <Button
-                  key={item.text}
-                  component={Link}
-                  to={item.path}
-                  startIcon={item.icon}
-                  color="inherit"
-                >
-                  {item.text}
-                </Button>
-              ))}
-            </Box>
-          )}
-          
-          {/* Mobile menu button */}
-          {isMobile && (
-            <IconButton
-              color="inherit"
-              edge="end"
-              onClick={() => setMobileMenuOpen(true)}
-            >
-              <MenuIcon />
-            </IconButton>
-          )}
-        </Toolbar>
-      </Container>
-      
-      {/* Mobile drawer */}
-      <Drawer
-        anchor="right"
-        open={mobileMenuOpen}
-        onClose={() => setMobileMenuOpen(false)}
-      >
-        <Box sx={{ width: 280, pt: 2 }}>
-          {/* Mobile search */}
-          <Box
-            component="form"
-            onSubmit={handleSearch}
-            sx={{ px: 2, mb: 2 }}
-          >
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="搜索..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Box>
-          
-          <List>
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex items-center space-x-1">
             {menuItems.map((item) => (
-              <ListItem
-                key={item.text}
-                disablePadding
+              <Button
+                key={item.path}
+                asChild
+                variant="ghost"
+                className="flex items-center gap-2 text-neutral-600 dark:text-neutral-900 hover:text-neutral-900 dark:hover:text-neutral-900 transition-colors [&>svg]:text-neutral-600 [&>svg]:dark:text-neutral-900 [&>svg]:hover:text-neutral-900 [&>svg]:dark:hover:text-neutral-900"
               >
-                <ListItemButton
-                  component={Link}
-                  to={item.path}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <ListItemIcon>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.text} />
-                </ListItemButton>
-              </ListItem>
+                <Link to={item.path}>
+                  {item.icon}
+                  {item.text}
+                </Link>
+              </Button>
             ))}
-          </List>
-        </Box>
-      </Drawer>
-    </AppBar>
+          </nav>
+          
+          {/* Search & Mobile Menu */}
+          <div className="flex items-center gap-2 flex-1 justify-end md:justify-end md:flex-none">
+            
+            {/* Theme Toggle */}
+            <ThemeToggle />
+
+            {/* Language Switcher */}
+            <LanguageSwitcher />
+            
+            {/* Mobile Menu Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden text-neutral-600 dark:text-neutral-900 hover:text-neutral-900 dark:hover:text-neutral-900 [&>svg]:text-neutral-600 [&>svg]:dark:text-neutral-900 [&>svg]:hover:text-neutral-900 [&>svg]:dark:hover:text-neutral-900"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </Button>
+          </div>
+        </div>
+      </div>
+      
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="lg:hidden border-t border-neutral-200 dark:border-neutral-700 bg-white dark:bg-background">
+              <div className="container mx-auto px-4 py-4 space-y-1">
+                {menuItems.map((item) => (
+                  <Button
+                    key={item.path}
+                    asChild
+                    variant="ghost"
+                    className="w-full justify-start gap-3 text-neutral-600 dark:text-neutral-900 hover:text-neutral-900 dark:hover:text-neutral-900 [&>svg]:text-neutral-600 [&>svg]:dark:text-neutral-900 [&>svg]:hover:text-neutral-900 [&>svg]:dark:hover:text-neutral-900"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Link to={item.path}>
+                      {item.icon}
+                      {item.text}
+                    </Link>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+    </header>
   );
 };
 

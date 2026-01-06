@@ -9,15 +9,7 @@ export const config = {
   
   // Database
   database: {
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432', 10),
-    name: process.env.DB_NAME || 'nga_museum',
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'password',
-    pool: {
-      min: parseInt(process.env.DB_POOL_MIN || '2', 10),
-      max: parseInt(process.env.DB_POOL_MAX || '10', 10),
-    },
+    uri: process.env.MONGO_URI || 'mongodb://localhost:27017/openart',
   },
   
   // Redis

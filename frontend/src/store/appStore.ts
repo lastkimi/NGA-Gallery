@@ -27,6 +27,9 @@ interface AppState {
   // View mode
   viewMode: 'grid' | 'list';
   setViewMode: (mode: 'grid' | 'list') => void;
+
+  // Search action (atomic update)
+  searchObjects: (query: string) => void;
 }
 
 const defaultFilters: FilterOptions = {
@@ -41,7 +44,7 @@ const defaultFilters: FilterOptions = {
 
 const defaultPagination: Pagination = {
   page: 1,
-  limit: 20,
+  limit: 200,
   total: 0,
   totalPages: 0,
 };
@@ -79,4 +82,18 @@ export const useAppStore = create<AppState>((set) => ({
   // View mode
   viewMode: 'grid',
   setViewMode: (mode) => set({ viewMode: mode }),
+
+  // Search action implementation
+  searchObjects: (query) => {
+    set((state) => ({
+      filters: {
+        ...defaultFilters, // Reset other filters
+        search: query || '',
+      },
+      pagination: {
+        ...state.pagination,
+        page: 1, // Reset to first page
+      }
+    }));
+  },
 }));
