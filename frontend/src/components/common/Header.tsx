@@ -38,10 +38,16 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
       <div className="container mx-auto px-4">
         <div className="flex h-16 md:h-20 items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2 group">
-            <h1 className="text-xl md:text-2xl font-serif font-bold tracking-tight text-neutral-900 dark:text-neutral-900 group-hover:text-neutral-700 dark:group-hover:text-neutral-900 transition-colors">
-              NGA 线上博物馆
-            </h1>
+          <Link to="/" className="flex items-center space-x-3 group">
+            <img src="/logo.svg" alt="OpenArt Logo" className="h-8 md:h-10 w-auto dark:brightness-0 dark:invert" />
+            <div className="flex flex-col">
+              <span className="text-xl md:text-2xl font-serif font-bold tracking-tight text-neutral-900 dark:text-neutral-900 leading-none group-hover:text-neutral-700 dark:group-hover:text-neutral-700 transition-colors">
+                OpenArt
+              </span>
+              <span className="text-[10px] md:text-xs font-medium tracking-widest uppercase text-neutral-500 dark:text-neutral-600">
+                全球艺术典藏
+              </span>
+            </div>
           </Link>
           
           {/* Desktop Navigation */}

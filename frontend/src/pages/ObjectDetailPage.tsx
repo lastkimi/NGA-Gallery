@@ -14,11 +14,16 @@ import { cn } from '@/lib/utils';
 import ImageViewer from '../components/common/ImageViewer';
 import { useTranslatedFields } from '../hooks/useTranslatedFields';
 
+import { getIdFromSlug, generateSlug } from '../utils/slug';
+
 const RELATED_PAGE_SIZE = 12;
 
 const ObjectDetailPage: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const { id } = useParams<{ id: string }>();
+  const { id: paramId } = useParams<{ id: string }>();
+  // 从 slug 中提取真实的 ID
+  const id = paramId ? getIdFromSlug(paramId) : undefined;
+  
   const [object, setObject] = useState<ObjectType | null>(null);
   const [isImmersiveMode, setIsImmersiveMode] = useState(false);
   
@@ -440,9 +445,10 @@ const ObjectDetailPage: React.FC = () => {
                 }
                 
                 const objTranslated = getTranslatedFieldsForRelated(obj);
+                const slug = generateSlug(objTranslated.title, objTranslated.attribution, obj.object_id);
                 
                 return (
-                  <Link key={obj.object_id} to={`/object/${obj.object_id}`} className="group block">
+                  <Link key={obj.object_id} to={`/object/${slug}`} className="group block">
                     <Card className={cn(
                       "overflow-hidden border-border hover:shadow-md transition-all duration-300 h-full dark:bg-card",
                       isImmersiveMode ? "bg-transparent border-none" : ""

@@ -9,7 +9,7 @@ export const config = {
   
   // Database
   database: {
-    uri: process.env.MONGO_URI || 'mongodb://localhost:27017/openart',
+    uri: process.env.MONGO_URI || 'mongodb://localhost:27019/openart',
   },
   
   // Redis

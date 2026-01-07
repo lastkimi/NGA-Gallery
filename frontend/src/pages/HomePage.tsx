@@ -14,6 +14,7 @@ import {
   CarouselPrevious,
 } from '@/components/ui/carousel';
 import { ChevronRight, Eye, Search } from 'lucide-react';
+import { generateSlug } from '../utils/slug';
 
 interface ClassificationSection {
   classification: string;
@@ -339,7 +340,7 @@ const HomePage: React.FC = () => {
                       <div className="absolute bottom-16 left-0 right-0 flex justify-center z-20 pointer-events-none">
                         <div className="pointer-events-auto flex gap-6 items-center">
                             <Button asChild variant="ghost" size="icon" className="h-12 w-12 text-white hover:bg-white/20 hover:text-white rounded-full transition-all duration-300">
-                              <Link to={`/object/${obj.object_id}`} title={t('object.viewArtwork')}>
+                              <Link to={`/object/${generateSlug(obj.title, obj.attribution, obj.object_id)}`} title={t('object.viewArtwork')}>
                                 <Eye className="h-8 w-8" />
                               </Link>
                             </Button>
@@ -407,7 +408,7 @@ const HomePage: React.FC = () => {
               
               return (
                 <Card key={obj.object_id} className="group overflow-hidden border-neutral-200 hover:shadow-elegant-md transition-all duration-300 hover:-translate-y-1">
-                  <Link to={`/object/${obj.object_id}`}>
+                  <Link to={`/object/${generateSlug(obj.title, obj.attribution, obj.object_id)}`}>
                     <div className="relative pt-[133.33%] bg-neutral-100 overflow-hidden">
                       {imageUrl ? (
                         <>
@@ -484,7 +485,7 @@ const HomePage: React.FC = () => {
                     
                     return (
                       <Card key={obj.object_id} className="group overflow-hidden border-neutral-200 hover:shadow-elegant-md transition-all duration-300 hover:-translate-y-1">
-                        <Link to={`/object/${obj.object_id}`}>
+                        <Link to={`/object/${generateSlug(obj.title, obj.attribution, obj.object_id)}`}>
                           <div className="relative pt-[133.33%] bg-neutral-100 overflow-hidden">
                             {imageUrl ? (
                               <>

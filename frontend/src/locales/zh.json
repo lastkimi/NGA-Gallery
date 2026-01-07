@@ -24,7 +24,7 @@
     "cc0Notice": "所有图片均采用CC0公共领域许可"
   },
   "home": {
-    "title": "NGA 线上博物馆",
+    "title": "OpenArt 全球艺术典藏",
     "subtitle": "探索超过143,000件艺术珍品，跨越从中世纪到今天的西方艺术历史",
     "exploreCollection": "探索藏品",
     "featuredDescription": "探索我们的精选艺术品收藏，每件作品都经过精心挑选",
@@ -101,7 +101,7 @@
   },
   "about": {
     "title": "关于项目",
-    "description": "NGA 线上博物馆是一个基于美国国家美术馆开放数据构建的中文艺术分享网站。",
+    "description": "OpenArt 是一个基于美国国家美术馆开放数据构建的中文艺术分享网站。",
     "purpose": "项目旨在让中文用户能够方便地探索和欣赏这些珍贵的艺术藏品。",
     "dataSource": "数据来源",
     "dataDescription": "本网站使用的数据全部来自美国国家美术馆的开放获取资源：",
@@ -126,7 +126,7 @@
     "dataAnalysis": "数据分析",
     "aboutProject": "关于项目",
     "disclaimer": "免责声明",
-    "ngaDisclaimer": "NGA 线上博物馆是一个基于 NGA 开放数据的中文艺术分享网站，与 NGA 官方无关。",
+    "ngaDisclaimer": "OpenArt 是一个基于 NGA 开放数据的中文艺术分享网站，与 NGA 官方无关。",
     "dataCredit": "数据来源：National Gallery of Art。图片采用 CC0 公共领域许可。"
   },
   "classifications": {

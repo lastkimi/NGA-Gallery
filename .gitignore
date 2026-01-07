@@ -56,6 +56,8 @@ Thumbs.db
 *.sqlite
 *.sqlite3
 mongo-data/
+# 允许数据库备份目录被跟踪
+!database/backup/
 
 # Docker
 .dockerignore

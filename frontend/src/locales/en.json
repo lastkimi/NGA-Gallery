@@ -24,7 +24,7 @@
     "cc0Notice": "All images are in the public domain (CC0)"
   },
   "home": {
-    "title": "NGA Online Museum",
+    "title": "OpenArt Global Collection",
     "subtitle": "Explore over 143,000 artworks spanning from the Middle Ages to today",
     "exploreCollection": "Explore Collection",
     "featuredDescription": "Explore our curated collection of artworks, each piece carefully selected",
@@ -100,7 +100,7 @@
   },
   "about": {
     "title": "About Project",
-    "description": "NGA Online Museum is a Chinese art sharing website based on the National Gallery of Art's open data.",
+    "description": "OpenArt is a Chinese art sharing website based on the National Gallery of Art's open data.",
     "purpose": "The project aims to make it convenient for Chinese users to explore and appreciate these precious artworks.",
     "dataSource": "Data Source",
     "dataDescription": "All data on this website comes from the National Gallery of Art's open access resources:",
@@ -125,7 +125,7 @@
     "dataAnalysis": "Data Analysis",
     "aboutProject": "About Project",
     "disclaimer": "Disclaimer",
-    "ngaDisclaimer": "NGA Online Museum is a Chinese art sharing website based on NGA open data. Not affiliated with NGA official.",
+    "ngaDisclaimer": "OpenArt is a Chinese art sharing website based on NGA open data. Not affiliated with NGA official.",
     "dataCredit": "Data source: National Gallery of Art. Images are in the public domain (CC0)."
   },
   "classifications": {

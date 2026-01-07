@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useTranslatedFields } from '../../hooks/useTranslatedFields';
 import { useTranslation } from 'react-i18next';
+import { generateSlug } from '../../utils/slug';
 
 interface ObjectCardProps {
   object: Object;
@@ -69,11 +70,12 @@ const ObjectCard: React.FC<ObjectCardProps> = ({ object, viewMode = 'grid' }) =>
   };
   
   const thumbnailUrl = getThumbnailUrl();
+  const slug = generateSlug(object.title, object.attribution, object.object_id);
   
   if (viewMode === 'list') {
     return (
       <Card className={cn("overflow-hidden border-border hover:shadow-elegant-md transition-all duration-300 dark:bg-card dark:text-card-foreground", "hover:-translate-y-0.5")}>
-        <Link to={`/object/${object.object_id}`} className="flex gap-6">
+        <Link to={`/object/${slug}`} className="flex gap-6">
           {hasImage && (
             <div className="w-32 h-32 md:w-40 md:h-40 shrink-0 bg-muted rounded-l overflow-hidden">
               <img 
@@ -113,7 +115,7 @@ const ObjectCard: React.FC<ObjectCardProps> = ({ object, viewMode = 'grid' }) =>
   
   return (
     <Card className={cn("group overflow-hidden border-border h-full flex flex-col dark:bg-card dark:text-card-foreground", "hover:shadow-elegant-md transition-all duration-300 hover:-translate-y-1")}>
-      <Link to={`/object/${object.object_id}`}>
+      <Link to={`/object/${slug}`}>
         <div className="relative pt-[133.33%] bg-muted overflow-hidden">
           {hasImage ? (
             <>
